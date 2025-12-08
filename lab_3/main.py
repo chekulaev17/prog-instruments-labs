@@ -22,3 +22,17 @@ def load_data(
     ) as file:
         reader = csv.reader(file, delimiter=delimiter)
         return list(reader)
+
+    def validate_row(row: list[str], patterns: list[re.Pattern]) -> bool:
+        """
+        Проверяет строку CSV.
+        Количество значений должно совпадать с количеством паттернов.
+        Каждая ячейка должна проходить pattern.fullmatch.
+        """
+        if len(row) != len(patterns):
+            return False
+
+        for pattern, value in zip(patterns, row):
+            if not pattern.fullmatch(value.strip()):
+                return False
+        return True
