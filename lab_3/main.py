@@ -52,3 +52,33 @@ def load_data(
                 invalid.append(index)
 
         return invalid
+
+
+def main() -> None:
+    """
+    Основной запуск:
+    - загрузка данных
+    - валидация
+    - вычисление контрольной суммы
+    - запись в result.json
+    """
+    print("=== CSV Validation Script ===")
+
+    data = load_data(DEFAULT_FILE_PATH)
+    patterns = get_validation_patterns()
+    invalid_rows = find_invalid_rows(data, patterns)
+
+    print(f"Невалидных строк: {len(invalid_rows)}")
+
+    checksum_value = calculate_checksum(invalid_rows)
+    serialize_result(DEFAULT_VARIANT, checksum_value)
+
+    print(f"Контрольная сумма: {checksum_value}")
+    print(
+        f"Результат записан в result.json "
+        f"(вариант {DEFAULT_VARIANT})"
+    )
+
+
+if __name__ == "__main__":
+    main()
