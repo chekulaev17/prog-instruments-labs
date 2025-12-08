@@ -36,3 +36,19 @@ def load_data(
             if not pattern.fullmatch(value.strip()):
                 return False
         return True
+
+    def find_invalid_rows(
+            data: list[list[str]], patterns: list[re.Pattern]
+    ) -> list[int]:
+        """
+        Возвращает список индексов невалидных строк.
+        Индексация соответствует требованиям checksum-модуля.
+        """
+        invalid = []
+
+        # Пропускаем заголовок: data[1:]
+        for index, row in enumerate(data[1:], start=0):
+            if not validate_row(row, patterns):
+                invalid.append(index)
+
+        return invalid
