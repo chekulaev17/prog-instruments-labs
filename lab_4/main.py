@@ -59,6 +59,60 @@ class ResourceManager:
         return pygame.font.Font(path, size)
 
 
+class ScoreManager:
+    def __init__(self):
+        self.current = 0
+        self.high = 0
+        self.pipes_passed = 0
+        self.achievements = {
+            'first_pipe': False,
+            '10_points': False,
+            '20_points': False,
+            '50_points': False
+        }
+
+    def add_survival_score(self):
+        self.current += 0.01
+
+    def add_pipe_score(self):
+        self.current += 1
+        self.pipes_passed += 1
+        self.check_achievements()
+
+    def check_achievements(self):
+        if not self.achievements['first_pipe'] and self.pipes_passed >= 1:
+            self.achievements['first_pipe'] = True
+            print("Achievement: First Pipe!")
+
+        if not self.achievements['10_points'] and self.current >= 10:
+            self.achievements['10_points'] = True
+            print("Achievement: 10 Points!")
+
+        if not self.achievements['20_points'] and self.current >= 20:
+            self.achievements['20_points'] = True
+            print("Achievement: 20 Points!")
+
+        if not self.achievements['50_points'] and self.current >= 50:
+            self.achievements['50_points'] = True
+            print("Achievement: 50 Points!")
+
+    def game_over(self):
+        if self.current > self.high:
+            self.high = self.current
+
+    def reset(self):
+        self.current = 0
+        self.pipes_passed = 0
+        for key in self.achievements:
+            self.achievements[key] = False
+
+    def get_display_score(self):
+        return int(self.current)
+
+    def get_display_high(self):
+        return int(self.high)
+
+
 class Bird:
     def __init__(self):
         self.frames = [
@@ -96,6 +150,7 @@ class Bird:
 class PipeManager:
     def __init__(self):
         self.pipes = []
+        self.passed_pipes = set()
         self.pipe_img = ResourceManager.load_image("assets/pipe-green.png", alpha=True)
         self.SPAWNPIPE = pygame.USEREVENT
         pygame.time.set_timer(self.SPAWNPIPE, Config.PIPE_SPAWN)
@@ -117,6 +172,18 @@ class PipeManager:
             else:
                 flip = pygame.transform.flip(self.pipe_img, False, True)
                 screen.blit(flip, pipe)
+
+    def check_pipe_passed(self, bird_x):
+        score = 0
+        for i in range(0, len(self.pipes), 2):
+            if i not in self.passed_pipes and self.pipes[i].centerx < bird_x:
+                self.passed_pipes.add(i)
+                score += 1
+        return score
+
+    def clear(self):
+        self.pipes.clear()
+        self.passed_pipes.clear()
 
 
 class Floor:
@@ -144,14 +211,13 @@ class GameEngine:
         self.pipes = PipeManager()
         self.floor = Floor()
         self.sound = SoundManager()
+        self.score = ScoreManager()
         self.font = ResourceManager.load_font("assets/FlappyBirdy.ttf", 40)
         self.bg = ResourceManager.load_image("assets/background-night.png")
         self.game_over_img = ResourceManager.load_image("assets/message.png", alpha=True)
         self.game_over_rect = self.game_over_img.get_rect(center=(Config.SCREEN_W / 2, Config.SCREEN_H / 2))
 
         self.state = GameState.MAIN
-        self.score = 0
-        self.high_score = 0
 
     def check_collision(self):
         for pipe in self.pipes.pipes:
@@ -173,9 +239,9 @@ class GameEngine:
                     self.sound.play_flap()
                 else:
                     self.state = GameState.MAIN
-                    self.pipes.pipes.clear()
+                    self.pipes.clear()
                     self.bird.reset()
-                    self.score = 0
+                    self.score.reset()
                     self.sound.reset_timer()
 
             if event.type == self.pipes.SPAWNPIPE and self.state == GameState.MAIN:
@@ -192,10 +258,14 @@ class GameEngine:
 
             if not self.check_collision():
                 self.sound.play_death()
-                self.high_score = max(self.score, self.high_score)
+                self.score.game_over()
                 self.state = GameState.OVER
 
-            self.score += 0.01
+            self.score.add_survival_score()
+            pipe_score = self.pipes.check_pipe_passed(self.bird.rect.centerx)
+            if pipe_score > 0:
+                self.score.add_pipe_score()
+
             self.sound.update_score_sound()
 
     def draw(self):
@@ -205,12 +275,12 @@ class GameEngine:
         self.floor.draw(self.screen)
 
         if self.state == GameState.MAIN:
-            score_text = self.font.render(str(int(self.score)), True, (255, 255, 255))
+            score_text = self.font.render(str(self.score.get_display_score()), True, (255, 255, 255))
             self.screen.blit(score_text, score_text.get_rect(center=(Config.SCREEN_W / 2, 50)))
         else:
             self.screen.blit(self.game_over_img, self.game_over_rect)
-            score_text = self.font.render(f"Score:{int(self.score)}", True, (255, 255, 255))
-            high_text = self.font.render(f"High:{int(self.high_score)}", True, (255, 255, 255))
+            score_text = self.font.render(f"Score:{self.score.get_display_score()}", True, (255, 255, 255))
+            high_text = self.font.render(f"High:{self.score.get_display_high()}", True, (255, 255, 255))
             self.screen.blit(score_text, score_text.get_rect(center=(Config.SCREEN_W / 2, 50)))
             self.screen.blit(high_text, high_text.get_rect(center=(Config.SCREEN_W / 2, 410)))
 
