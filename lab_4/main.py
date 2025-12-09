@@ -1,200 +1,136 @@
 import pygame, sys, random
+from enum import Enum
 
 
-# ============ КЛАСС КОНФИГУРАЦИИ ============
+class GameState(Enum):
+    MAIN = "main_game"
+    OVER = "game_over"
+
+
 class Config:
-    SCREEN_WIDTH = 288
-    SCREEN_HEIGHT = 512
+    SCREEN_W = 288
+    SCREEN_H = 512
     FPS = 60
     GRAVITY = 0.25
-    FLOOR_HEIGHT = 75
+    FLOOR_H = 75
     PIPE_SPEED = 5
     FLOOR_SPEED = 1
-    BIRD_JUMP = -5
+    JUMP = -5
     PIPE_GAP = 450
-    PIPE_SPAWN_RATE = 1000  # ms
-    BIRD_ANIMATION_RATE = 200  # ms
-    SCORE_SOUND_INTERVAL = 100
+    PIPE_SPAWN = 1000
+    BIRD_ANIM = 200
+    SCORE_SOUND = 100
+    PIPE_HEIGHTS = [200, 250, 300, 350, 400]
 
 
-# ============ КЛАСС ПТИЦЫ ============
 class Bird:
     def __init__(self, config):
         self.config = config
-        self.load_images()
-        self.reset()
-
-        # Анимация
-        self.BIRDFLAP = pygame.USEREVENT + 1
-        pygame.time.set_timer(self.BIRDFLAP, config.BIRD_ANIMATION_RATE)
-
-    def load_images(self):
         self.frames = [
             pygame.image.load("assets/bluebird.png").convert_alpha(),
             pygame.image.load("assets/bluebird-midflap.png").convert_alpha(),
             pygame.image.load("assets/bluebird-upflap.png").convert_alpha()
         ]
+        self.reset()
+        self.BIRDFLAP = pygame.USEREVENT + 1
+        pygame.time.set_timer(self.BIRDFLAP, config.BIRD_ANIM)
 
     def reset(self):
-        self.frame_index = 0
-        self.surface = self.frames[self.frame_index]
-        self.rect = self.surface.get_rect(center=(50, Config.SCREEN_HEIGHT / 2))
+        self.frame = 0
+        self.surface = self.frames[self.frame]
+        self.rect = self.surface.get_rect(center=(50, Config.SCREEN_H / 2))
         self.movement = 0
-
-    def animate(self):
-        self.frame_index = (self.frame_index + 1) % len(self.frames)
-        self.surface = self.frames[self.frame_index]
-        self.rect = self.surface.get_rect(center=(50, self.rect.centery))
-
-    def jump(self):
-        self.movement = 0
-        self.movement += Config.BIRD_JUMP
 
     def update(self):
         self.movement += Config.GRAVITY
         self.rect.centery += self.movement
 
+    def jump(self):
+        self.movement = 0
+        self.movement += Config.JUMP
+
     def draw(self, screen):
-        rotated_bird = pygame.transform.rotozoom(
-            self.surface,
-            -self.movement * 5,
-            1
-        )
-        screen.blit(rotated_bird, self.rect)
+        rotated = pygame.transform.rotozoom(self.surface, -self.movement * 5, 1)
+        screen.blit(rotated, self.rect)
 
-    def get_rect(self):
-        return self.rect
+    def animate(self):
+        self.frame = (self.frame + 1) % len(self.frames)
+        self.surface = self.frames[self.frame]
 
 
-# ============ КЛАСС УПРАВЛЕНИЯ ТРУБАМИ ============
 class PipeManager:
     def __init__(self, config):
         self.config = config
-        self.pipe_list = []
-        self.pipe_surface = pygame.image.load("assets/pipe-green.png")
-        self.pipe_heights = [200, 250, 300, 350, 400]
-
-        # Таймер спавна труб
+        self.pipes = []
+        self.pipe_img = pygame.image.load("assets/pipe-green.png")
         self.SPAWNPIPE = pygame.USEREVENT
-        pygame.time.set_timer(self.SPAWNPIPE, config.PIPE_SPAWN_RATE)
+        pygame.time.set_timer(self.SPAWNPIPE, config.PIPE_SPAWN)
 
-    def create_pipe(self):
-        random_pipe_pos = random.choice(self.pipe_heights)
-        bottom_pipe = self.pipe_surface.get_rect(midtop=(500, random_pipe_pos))
-        top_pipe = self.pipe_surface.get_rect(midtop=(500, random_pipe_pos - Config.PIPE_GAP))
-        return bottom_pipe, top_pipe
-
-    def spawn_pipe(self):
-        self.pipe_list.extend(self.create_pipe())
-
-    def move_pipes(self):
-        for pipe in self.pipe_list:
-            pipe.centerx -= Config.PIPE_SPEED
-
-    def draw_pipes(self, screen):
-        for pipe in self.pipe_list:
-            if pipe.bottom >= Config.SCREEN_HEIGHT:
-                screen.blit(self.pipe_surface, pipe)
-            else:
-                flip_pipe = pygame.transform.flip(self.pipe_surface, False, True)
-                screen.blit(flip_pipe, pipe)
-
-    def get_pipes(self):
-        return self.pipe_list
-
-    def clear(self):
-        self.pipe_list.clear()
-
-
-# ============ КЛАСС ПОЛА ============
-class Floor:
-    def __init__(self, config):
-        self.config = config
-        self.surface = pygame.image.load("assets/base.png")
-        self.x_pos = 0
+    def spawn(self):
+        height = random.choice(Config.PIPE_HEIGHTS)
+        bottom = self.pipe_img.get_rect(midtop=(500, height))
+        top = self.pipe_img.get_rect(midtop=(500, height - Config.PIPE_GAP))
+        self.pipes.extend([bottom, top])
 
     def update(self):
-        self.x_pos -= Config.FLOOR_SPEED
-        if self.x_pos <= -200:
-            self.x_pos = 0
+        for pipe in self.pipes:
+            pipe.centerx -= Config.PIPE_SPEED
 
     def draw(self, screen):
-        screen.blit(self.surface, (self.x_pos, Config.SCREEN_HEIGHT - Config.FLOOR_HEIGHT))
-        screen.blit(self.surface, (self.x_pos + 200, Config.SCREEN_HEIGHT - Config.FLOOR_HEIGHT))
+        for pipe in self.pipes:
+            if pipe.bottom >= Config.SCREEN_H:
+                screen.blit(self.pipe_img, pipe)
+            else:
+                flip = pygame.transform.flip(self.pipe_img, False, True)
+                screen.blit(flip, pipe)
 
 
-# ============ КЛАСС ОБНАРУЖЕНИЯ СТОЛКНОВЕНИЙ ============
-class CollisionDetector:
-    @staticmethod
-    def check(bird_rect, pipes):
-        # Проверка столкновений с трубами
-        for pipe in pipes:
-            if bird_rect.colliderect(pipe):
-                return False
+class Floor:
+    def __init__(self):
+        self.img = pygame.image.load("assets/base.png")
+        self.x = 0
 
-        # Проверка границ экрана
-        if bird_rect.top <= -100 or bird_rect.bottom >= Config.SCREEN_HEIGHT - Config.FLOOR_HEIGHT:
-            return False
+    def update(self):
+        self.x -= Config.FLOOR_SPEED
+        if self.x <= -200:
+            self.x = 0
 
-        return True
-
-
-# ============ КЛАСС ПОЛЬЗОВАТЕЛЬСКОГО ИНТЕРФЕЙСА ============
-class UI:
-    def __init__(self, config):
-        self.config = config
-        self.game_font = pygame.font.Font("assets/FlappyBirdy.ttf", 40)
-        self.background = pygame.image.load("assets/background-night.png")
-        self.game_over_surface = pygame.image.load("assets/message.png")
-        self.game_over_rect = self.game_over_surface.get_rect(
-            center=(config.SCREEN_WIDTH / 2, config.SCREEN_HEIGHT / 2))
-
-    def draw_score(self, screen, score, high_score, game_state):
-        if game_state == "main_game":
-            score_surface = self.game_font.render(str(int(score)), True, (255, 255, 255))
-            score_rect = score_surface.get_rect(center=(self.config.SCREEN_WIDTH / 2, 50))
-            screen.blit(score_surface, score_rect)
-
-        elif game_state == "game_over":
-            score_surface = self.game_font.render(f"Score:{int(score)}", True, (255, 255, 255))
-            score_rect = score_surface.get_rect(center=(self.config.SCREEN_WIDTH / 2, 50))
-            screen.blit(score_surface, score_rect)
-
-            high_score_surface = self.game_font.render(f"High Score:{int(high_score)}", True, (255, 255, 255))
-            high_score_rect = high_score_surface.get_rect(center=(self.config.SCREEN_WIDTH / 2, 410))
-            screen.blit(high_score_surface, high_score_rect)
-
-    def draw_background(self, screen):
-        screen.blit(self.background, (0, 0))
-
-    def draw_game_over(self, screen):
-        screen.blit(self.game_over_surface, self.game_over_rect)
+    def draw(self, screen):
+        y = Config.SCREEN_H - Config.FLOOR_H
+        screen.blit(self.img, (self.x, y))
+        screen.blit(self.img, (self.x + 200, y))
 
 
-# ============ КЛАСС ИГРОВОГО ДВИЖКА ============
 class GameEngine:
     def __init__(self):
         self.config = Config()
-        self.screen = pygame.display.set_mode((self.config.SCREEN_WIDTH, self.config.SCREEN_HEIGHT))
+        self.screen = pygame.display.set_mode((self.config.SCREEN_W, self.config.SCREEN_H))
         self.clock = pygame.time.Clock()
 
-        # Инициализация компонентов
         self.bird = Bird(self.config)
-        self.pipe_manager = PipeManager(self.config)
-        self.floor = Floor(self.config)
-        self.collision_detector = CollisionDetector()
-        self.ui = UI(self.config)
+        self.pipes = PipeManager(self.config)
+        self.floor = Floor()
+        self.font = pygame.font.Font("assets/FlappyBirdy.ttf", 40)
+        self.bg = pygame.image.load("assets/background-night.png")
+        self.game_over_img = pygame.image.load("assets/message.png")
+        self.game_over_rect = self.game_over_img.get_rect(center=(self.config.SCREEN_W / 2, self.config.SCREEN_H / 2))
 
-        # Игровое состояние
-        self.game_active = True
+        self.state = GameState.MAIN
         self.score = 0
         self.high_score = 0
-        self.score_sound_countdown = self.config.SCORE_SOUND_INTERVAL
+        self.sound_timer = self.config.SCORE_SOUND
 
-        # Звуки
         self.flap_sound = pygame.mixer.Sound("assets/wing.ogg")
         self.death_sound = pygame.mixer.Sound("assets/hit.ogg")
         self.score_sound = pygame.mixer.Sound("assets/point.ogg")
+
+    def check_collision(self):
+        for pipe in self.pipes.pipes:
+            if self.bird.rect.colliderect(pipe):
+                return False
+        if self.bird.rect.top <= -100 or self.bird.rect.bottom >= Config.SCREEN_H - Config.FLOOR_H:
+            return False
+        return True
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -202,93 +138,65 @@ class GameEngine:
                 pygame.quit()
                 sys.exit()
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    if self.game_active:
-                        self.bird.jump()
-                        self.flap_sound.play()
-                    else:
-                        self.reset_game()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                if self.state == GameState.MAIN:
+                    self.bird.jump()
+                    self.flap_sound.play()
+                else:
+                    self.state = GameState.MAIN
+                    self.pipes.pipes.clear()
+                    self.bird.reset()
+                    self.score = 0
 
-            if event.type == self.pipe_manager.SPAWNPIPE and self.game_active:
-                self.pipe_manager.spawn_pipe()
+            if event.type == self.pipes.SPAWNPIPE and self.state == GameState.MAIN:
+                self.pipes.spawn()
 
             if event.type == self.bird.BIRDFLAP:
                 self.bird.animate()
 
     def update(self):
-        if self.game_active:
-            # Обновление птицы
+        if self.state == GameState.MAIN:
             self.bird.update()
-
-            # Обновление труб
-            self.pipe_manager.move_pipes()
-
-            # Обновление пола
+            self.pipes.update()
             self.floor.update()
 
-            # Проверка столкновений
-            self.game_active = self.collision_detector.check(
-                self.bird.get_rect(),
-                self.pipe_manager.get_pipes()
-            )
+            if not self.check_collision():
+                self.death_sound.play()
+                self.high_score = max(self.score, self.high_score)
+                self.state = GameState.OVER
 
-            # Обновление счета
             self.score += 0.01
-            self.update_score_sound()
-
-            # Проверка завершения игры
-            if not self.game_active:
-                self.game_over()
-
-    def update_score_sound(self):
-        self.score_sound_countdown -= 1
-        if self.score_sound_countdown <= 0:
-            self.score_sound.play()
-            self.score_sound_countdown = self.config.SCORE_SOUND_INTERVAL
-
-    def game_over(self):
-        self.death_sound.play()
-        self.high_score = max(self.score, self.high_score)
-
-    def reset_game(self):
-        self.game_active = True
-        self.pipe_manager.clear()
-        self.bird.reset()
-        self.score = 0
-        self.score_sound_countdown = self.config.SCORE_SOUND_INTERVAL
+            self.sound_timer -= 1
+            if self.sound_timer <= 0:
+                self.score_sound.play()
+                self.sound_timer = self.config.SCORE_SOUND
 
     def draw(self):
-        # Отрисовка фона
-        self.ui.draw_background(self.screen)
-
-        if self.game_active:
-            # Отрисовка игровых объектов
-            self.pipe_manager.draw_pipes(self.screen)
-            self.bird.draw(self.screen)
-            self.ui.draw_score(self.screen, self.score, self.high_score, "main_game")
-        else:
-            # Отрисовка экрана завершения игры
-            self.ui.draw_game_over(self.screen)
-            self.ui.draw_score(self.screen, self.score, self.high_score, "game_over")
-
-        # Отрисовка пола (всегда)
+        self.screen.blit(self.bg, (0, 0))
+        self.pipes.draw(self.screen)
+        self.bird.draw(self.screen)
         self.floor.draw(self.screen)
+
+        if self.state == GameState.MAIN:
+            score_text = self.font.render(str(int(self.score)), True, (255, 255, 255))
+            self.screen.blit(score_text, score_text.get_rect(center=(self.config.SCREEN_W / 2, 50)))
+        else:
+            self.screen.blit(self.game_over_img, self.game_over_rect)
+            score_text = self.font.render(f"Score:{int(self.score)}", True, (255, 255, 255))
+            high_text = self.font.render(f"High:{int(self.high_score)}", True, (255, 255, 255))
+            self.screen.blit(score_text, score_text.get_rect(center=(self.config.SCREEN_W / 2, 50)))
+            self.screen.blit(high_text, high_text.get_rect(center=(self.config.SCREEN_W / 2, 410)))
 
     def run(self):
         while True:
             self.handle_events()
             self.update()
             self.draw()
-
             pygame.display.update()
             self.clock.tick(self.config.FPS)
 
 
-# ============ ТОЧКА ВХОДА ============
 if __name__ == "__main__":
     pygame.mixer.pre_init()
     pygame.init()
-
-    game = GameEngine()
-    game.run()
+    GameEngine().run()
