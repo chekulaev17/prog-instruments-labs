@@ -1,4 +1,6 @@
-import pygame, sys, random
+import pygame
+import sys
+import random
 from enum import Enum
 
 
@@ -8,39 +10,44 @@ class GameState(Enum):
 
 
 class Config:
-    SCREEN_W = 288
-    SCREEN_H = 512
+    SCREEN_WIDTH = 288
+    SCREEN_HEIGHT = 512
     FPS = 60
     GRAVITY = 0.25
-    FLOOR_H = 75
+    FLOOR_HEIGHT = 75
     PIPE_SPEED = 5
     FLOOR_SPEED = 1
-    JUMP = -5
+    JUMP_STRENGTH = -5
     PIPE_GAP = 450
-    PIPE_SPAWN = 1000
-    BIRD_ANIM = 200
-    SCORE_SOUND = 100
+    PIPE_SPAWN_RATE = 1000
+    BIRD_ANIMATION_RATE = 200
+    SCORE_SOUND_COOLDOWN = 100
     PIPE_HEIGHTS = [200, 250, 300, 350, 400]
+    BIRD_START_X = 50
+    PIPE_SPAWN_X = 500
+    FLOOR_RESET_X = -200
+    BIRD_TOP_BOUNDARY = -100
+    BIRD_ROTATION_MULTIPLIER = 5
 
 
 class SoundManager:
     def __init__(self):
-        self.flap = pygame.mixer.Sound("assets/wing.ogg")
-        self.death = pygame.mixer.Sound("assets/hit.ogg")
-        self.score = pygame.mixer.Sound("assets/point.ogg")
+        self.flap_sound = pygame.mixer.Sound("assets/wing.ogg")
+        self.death_sound = pygame.mixer.Sound("assets/hit.ogg")
+        self.score_sound = pygame.mixer.Sound("assets/point.ogg")
         self.timer = 0
-        self.cooldown = Config.SCORE_SOUND
+        self.cooldown = Config.SCORE_SOUND_COOLDOWN
 
     def play_flap(self):
-        self.flap.play()
+        self.flap_sound.play()
 
     def play_death(self):
-        self.death.play()
+        self.death_sound.play()
 
     def update_score_sound(self):
         self.timer -= 1
         if self.timer <= 0:
-            self.score.play()
+            self.score_sound.play()
             self.timer = self.cooldown
 
     def reset_timer(self):
@@ -65,10 +72,10 @@ class ScoreManager:
         self.high = 0
         self.pipes_passed = 0
         self.achievements = {
-            'first_pipe': False,
-            '10_points': False,
-            '20_points': False,
-            '50_points': False
+            "first_pipe": False,
+            "10_points": False,
+            "20_points": False,
+            "50_points": False,
         }
 
     def add_survival_score(self):
@@ -80,20 +87,20 @@ class ScoreManager:
         self.check_achievements()
 
     def check_achievements(self):
-        if not self.achievements['first_pipe'] and self.pipes_passed >= 1:
-            self.achievements['first_pipe'] = True
+        if not self.achievements["first_pipe"] and self.pipes_passed >= 1:
+            self.achievements["first_pipe"] = True
             print("Achievement: First Pipe!")
 
-        if not self.achievements['10_points'] and self.current >= 10:
-            self.achievements['10_points'] = True
+        if not self.achievements["10_points"] and self.current >= 10:
+            self.achievements["10_points"] = True
             print("Achievement: 10 Points!")
 
-        if not self.achievements['20_points'] and self.current >= 20:
-            self.achievements['20_points'] = True
+        if not self.achievements["20_points"] and self.current >= 20:
+            self.achievements["20_points"] = True
             print("Achievement: 20 Points!")
 
-        if not self.achievements['50_points'] and self.current >= 50:
-            self.achievements['50_points'] = True
+        if not self.achievements["50_points"] and self.current >= 50:
+            self.achievements["50_points"] = True
             print("Achievement: 50 Points!")
 
     def game_over(self):
@@ -118,17 +125,19 @@ class Bird:
         self.frames = [
             ResourceManager.load_image("assets/bluebird.png", alpha=True),
             ResourceManager.load_image("assets/bluebird-midflap.png", alpha=True),
-            ResourceManager.load_image("assets/bluebird-upflap.png", alpha=True)
+            ResourceManager.load_image("assets/bluebird-upflap.png", alpha=True),
         ]
         self.screen_height = screen_height
         self.reset()
-        self.BIRDFLAP = pygame.USEREVENT + 1
-        pygame.time.set_timer(self.BIRDFLAP, Config.BIRD_ANIM)
+        self.bird_flap_event = pygame.USEREVENT + 1
+        pygame.time.set_timer(self.bird_flap_event, Config.BIRD_ANIMATION_RATE)
 
     def reset(self):
         self.frame = 0
         self.surface = self.frames[self.frame]
-        self.rect = self.surface.get_rect(center=(50, self.screen_height / 2))
+        self.rect = self.surface.get_rect(
+            center=(Config.BIRD_START_X, self.screen_height / 2)
+        )
         self.movement = 0
 
     def update(self):
@@ -137,10 +146,12 @@ class Bird:
 
     def jump(self):
         self.movement = 0
-        self.movement += Config.JUMP
+        self.movement += Config.JUMP_STRENGTH
 
     def draw(self, screen):
-        rotated = pygame.transform.rotozoom(self.surface, -self.movement * 5, 1)
+        rotated = pygame.transform.rotozoom(
+            self.surface, -self.movement * Config.BIRD_ROTATION_MULTIPLIER, 1
+        )
         screen.blit(rotated, self.rect)
 
     def animate(self):
@@ -153,13 +164,15 @@ class PipeManager:
         self.pipes = []
         self.passed_pipes = set()
         self.pipe_img = ResourceManager.load_image("assets/pipe-green.png", alpha=True)
-        self.SPAWNPIPE = pygame.USEREVENT
-        pygame.time.set_timer(self.SPAWNPIPE, Config.PIPE_SPAWN)
+        self.pipe_spawn_event = pygame.USEREVENT
+        pygame.time.set_timer(self.pipe_spawn_event, Config.PIPE_SPAWN_RATE)
 
     def spawn(self):
         height = random.choice(Config.PIPE_HEIGHTS)
-        bottom = self.pipe_img.get_rect(midtop=(500, height))
-        top = self.pipe_img.get_rect(midtop=(500, height - Config.PIPE_GAP))
+        bottom = self.pipe_img.get_rect(midtop=(Config.PIPE_SPAWN_X, height))
+        top = self.pipe_img.get_rect(
+            midtop=(Config.PIPE_SPAWN_X, height - Config.PIPE_GAP)
+        )
         self.pipes.extend([bottom, top])
 
     def update(self):
@@ -168,7 +181,7 @@ class PipeManager:
 
     def draw(self, screen):
         for pipe in self.pipes:
-            if pipe.bottom >= Config.SCREEN_H:
+            if pipe.bottom >= Config.SCREEN_HEIGHT:
                 screen.blit(self.pipe_img, pipe)
             else:
                 flip = pygame.transform.flip(self.pipe_img, False, True)
@@ -195,11 +208,11 @@ class Floor:
 
     def update(self):
         self.x -= Config.FLOOR_SPEED
-        if self.x <= -200:
+        if self.x <= Config.FLOOR_RESET_X:
             self.x = 0
 
     def draw(self, screen):
-        y = self.screen_height - Config.FLOOR_H
+        y = self.screen_height - Config.FLOOR_HEIGHT
         screen.blit(self.img, (self.x, y))
         screen.blit(self.img, (self.x + 200, y))
 
@@ -207,7 +220,7 @@ class Floor:
 class GameFactory:
     @staticmethod
     def create_bird():
-        return Bird(Config.SCREEN_H)
+        return Bird(Config.SCREEN_HEIGHT)
 
     @staticmethod
     def create_pipe_manager():
@@ -215,7 +228,7 @@ class GameFactory:
 
     @staticmethod
     def create_floor():
-        return Floor(Config.SCREEN_H)
+        return Floor(Config.SCREEN_HEIGHT)
 
     @staticmethod
     def create_sound_manager():
@@ -227,11 +240,15 @@ class GameFactory:
 
 
 class GameEngine:
-    def __init__(self, factory=GameFactory()):
-        self.screen = pygame.display.set_mode((Config.SCREEN_W, Config.SCREEN_H))
+    def __init__(self, factory=None):
+        if factory is None:
+            factory = GameFactory()
+
+        self.screen = pygame.display.set_mode(
+            (Config.SCREEN_WIDTH, Config.SCREEN_HEIGHT)
+        )
         self.clock = pygame.time.Clock()
 
-        # Dependency Injection через фабрику
         self.bird = factory.create_bird()
         self.pipes = factory.create_pipe_manager()
         self.floor = factory.create_floor()
@@ -241,7 +258,9 @@ class GameEngine:
         self.font = ResourceManager.load_font("assets/FlappyBirdy.ttf", 40)
         self.bg = ResourceManager.load_image("assets/background-night.png")
         self.game_over_img = ResourceManager.load_image("assets/message.png", alpha=True)
-        self.game_over_rect = self.game_over_img.get_rect(center=(Config.SCREEN_W / 2, Config.SCREEN_H / 2))
+        self.game_over_rect = self.game_over_img.get_rect(
+            center=(Config.SCREEN_WIDTH / 2, Config.SCREEN_HEIGHT / 2)
+        )
 
         self.state = GameState.MAIN
 
@@ -249,8 +268,14 @@ class GameEngine:
         for pipe in self.pipes.pipes:
             if self.bird.rect.colliderect(pipe):
                 return False
-        if self.bird.rect.top <= -100 or self.bird.rect.bottom >= Config.SCREEN_H - Config.FLOOR_H:
+
+        floor_boundary = Config.SCREEN_HEIGHT - Config.FLOOR_HEIGHT
+        if (
+                self.bird.rect.top <= Config.BIRD_TOP_BOUNDARY
+                or self.bird.rect.bottom >= floor_boundary
+        ):
             return False
+
         return True
 
     def handle_events(self):
@@ -270,10 +295,10 @@ class GameEngine:
                     self.score.reset()
                     self.sound.reset_timer()
 
-            if event.type == self.pipes.SPAWNPIPE and self.state == GameState.MAIN:
+            if event.type == self.pipes.pipe_spawn_event and self.state == GameState.MAIN:
                 self.pipes.spawn()
 
-            if event.type == self.bird.BIRDFLAP:
+            if event.type == self.bird.bird_flap_event:
                 self.bird.animate()
 
     def update(self):
@@ -301,14 +326,26 @@ class GameEngine:
         self.floor.draw(self.screen)
 
         if self.state == GameState.MAIN:
-            score_text = self.font.render(str(self.score.get_display_score()), True, (255, 255, 255))
-            self.screen.blit(score_text, score_text.get_rect(center=(Config.SCREEN_W / 2, 50)))
+            score_text = self.font.render(
+                str(self.score.get_display_score()), True, (255, 255, 255)
+            )
+            self.screen.blit(
+                score_text, score_text.get_rect(center=(Config.SCREEN_WIDTH / 2, 50))
+            )
         else:
             self.screen.blit(self.game_over_img, self.game_over_rect)
-            score_text = self.font.render(f"Score:{self.score.get_display_score()}", True, (255, 255, 255))
-            high_text = self.font.render(f"High:{self.score.get_display_high()}", True, (255, 255, 255))
-            self.screen.blit(score_text, score_text.get_rect(center=(Config.SCREEN_W / 2, 50)))
-            self.screen.blit(high_text, high_text.get_rect(center=(Config.SCREEN_W / 2, 410)))
+            score_text = self.font.render(
+                f"Score: {self.score.get_display_score()}", True, (255, 255, 255)
+            )
+            high_text = self.font.render(
+                f"High: {self.score.get_display_high()}", True, (255, 255, 255)
+            )
+            self.screen.blit(
+                score_text, score_text.get_rect(center=(Config.SCREEN_WIDTH / 2, 50))
+            )
+            self.screen.blit(
+                high_text, high_text.get_rect(center=(Config.SCREEN_WIDTH / 2, 410))
+            )
 
     def run(self):
         while True:
@@ -319,7 +356,12 @@ class GameEngine:
             self.clock.tick(Config.FPS)
 
 
-if __name__ == "__main__":
+def main():
     pygame.mixer.pre_init()
     pygame.init()
-    GameEngine().run()
+    game = GameEngine()
+    game.run()
+
+
+if __name__ == "__main__":
+    main()
