@@ -114,12 +114,13 @@ class ScoreManager:
 
 
 class Bird:
-    def __init__(self):
+    def __init__(self, screen_height):
         self.frames = [
             ResourceManager.load_image("assets/bluebird.png", alpha=True),
             ResourceManager.load_image("assets/bluebird-midflap.png", alpha=True),
             ResourceManager.load_image("assets/bluebird-upflap.png", alpha=True)
         ]
+        self.screen_height = screen_height
         self.reset()
         self.BIRDFLAP = pygame.USEREVENT + 1
         pygame.time.set_timer(self.BIRDFLAP, Config.BIRD_ANIM)
@@ -127,7 +128,7 @@ class Bird:
     def reset(self):
         self.frame = 0
         self.surface = self.frames[self.frame]
-        self.rect = self.surface.get_rect(center=(50, Config.SCREEN_H / 2))
+        self.rect = self.surface.get_rect(center=(50, self.screen_height / 2))
         self.movement = 0
 
     def update(self):
@@ -187,9 +188,10 @@ class PipeManager:
 
 
 class Floor:
-    def __init__(self):
+    def __init__(self, screen_height):
         self.img = ResourceManager.load_image("assets/base.png", alpha=True)
         self.x = 0
+        self.screen_height = screen_height
 
     def update(self):
         self.x -= Config.FLOOR_SPEED
@@ -197,21 +199,45 @@ class Floor:
             self.x = 0
 
     def draw(self, screen):
-        y = Config.SCREEN_H - Config.FLOOR_H
+        y = self.screen_height - Config.FLOOR_H
         screen.blit(self.img, (self.x, y))
         screen.blit(self.img, (self.x + 200, y))
 
 
+class GameFactory:
+    @staticmethod
+    def create_bird():
+        return Bird(Config.SCREEN_H)
+
+    @staticmethod
+    def create_pipe_manager():
+        return PipeManager()
+
+    @staticmethod
+    def create_floor():
+        return Floor(Config.SCREEN_H)
+
+    @staticmethod
+    def create_sound_manager():
+        return SoundManager()
+
+    @staticmethod
+    def create_score_manager():
+        return ScoreManager()
+
+
 class GameEngine:
-    def __init__(self):
+    def __init__(self, factory=GameFactory()):
         self.screen = pygame.display.set_mode((Config.SCREEN_W, Config.SCREEN_H))
         self.clock = pygame.time.Clock()
 
-        self.bird = Bird()
-        self.pipes = PipeManager()
-        self.floor = Floor()
-        self.sound = SoundManager()
-        self.score = ScoreManager()
+        # Dependency Injection через фабрику
+        self.bird = factory.create_bird()
+        self.pipes = factory.create_pipe_manager()
+        self.floor = factory.create_floor()
+        self.sound = factory.create_sound_manager()
+        self.score = factory.create_score_manager()
+
         self.font = ResourceManager.load_font("assets/FlappyBirdy.ttf", 40)
         self.bg = ResourceManager.load_image("assets/background-night.png")
         self.game_over_img = ResourceManager.load_image("assets/message.png", alpha=True)
