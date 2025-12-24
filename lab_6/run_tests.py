@@ -22,9 +22,9 @@ def run_tests():
     cmd = [
         sys.executable, "-m", "pytest",
         "tests/",
-        "-v",  # Подробный вывод
-        "--tb=short",  # Короткий traceback
-        "--disable-warnings",  # Отключить предупреждения
+        "-v",                     # Подробный вывод
+        "--tb=short",             # Короткий traceback
+        "--disable-warnings",     # Отключить предупреждения
     ]
 
     print(f"\nЗапуск команды: {' '.join(cmd)}")

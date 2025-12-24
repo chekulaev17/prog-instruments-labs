@@ -1,5 +1,6 @@
 """
-Параметризованные тесты для функций find_gamma_for_deviation и find_n_for_deviation.
+Параметризованные тесты для функций
+find_gamma_for_deviation и find_n_for_deviation.
 Покрывает функции: find_gamma_for_deviation, find_n_for_deviation
 """
 
@@ -11,13 +12,17 @@ class TestParametricFunctions:
     """Параметризованные тесты для статистических функций."""
 
     @pytest.mark.parametrize("n,delta_ratio,expected_min_gamma", [
-        (10, 0.25, 0.5),  # Маленькая выборка, среднее отклонение
-        (30, 0.25, 0.7),  # Средняя выборка
+        (10, 0.25, 0.5),   # Маленькая выборка, среднее отклонение
+        (30, 0.25, 0.7),   # Средняя выборка
         (100, 0.25, 0.9),  # Большая выборка
-        (20, 0.1, 0.2),  # Малое отклонение
-        (20, 0.5, 0.95),  # Большое отклонение
+        (20, 0.1, 0.2),    # Малое отклонение
+        (20, 0.5, 0.95),   # Большое отклонение
     ])
-    def test_find_gamma_for_deviation_parameterized(self, n, delta_ratio, expected_min_gamma):
+
+
+    def test_find_gamma_for_deviation_parameterized(
+        self, n, delta_ratio, expected_min_gamma
+    ):
         """
         ПАРАМЕТРИЗОВАННЫЙ ТЕСТ: Поиск gamma для заданного отклонения.
         Проверяет, что функция возвращает значения в разумных пределах.
@@ -38,12 +43,17 @@ class TestParametricFunctions:
         (0.90, 0.25, 10),  # Средняя надежность
         (0.95, 0.25, 15),  # Высокая надежность
         (0.99, 0.25, 30),  # Очень высокая надежность
-        (0.95, 0.1, 50),  # Малое отклонение
-        (0.95, 0.5, 10),  # Большое отклонение
+        (0.95, 0.1, 50),   # Малое отклонение
+        (0.95, 0.5, 10),   # Большое отклонение
     ])
-    def test_find_n_for_deviation_parameterized(self, gamma, delta_ratio, expected_min_n):
+
+
+    def test_find_n_for_deviation_parameterized(
+        self, gamma, delta_ratio, expected_min_n
+    ):
         """
-        ПАРАМЕТРИЗОВАННЫЙ ТЕСТ: Поиск объема выборки для заданных параметров.
+        ПАРАМЕТРИЗОВАННЫЙ ТЕСТ:
+        Поиск объема выборки для заданных параметров.
         """
         n_required = find_n_for_deviation(gamma, delta_ratio)
 
@@ -53,7 +63,8 @@ class TestParametricFunctions:
         # Проверка, что n не слишком мало для данных параметров
         assert n_required >= expected_min_n
 
-        # Для большей надежности и/или меньшего отклонения требуется большая выборка
+        # Для большей надежности и/или меньшего
+        # отклонения требуется большая выборка
         if gamma == 0.99 and delta_ratio == 0.25:
             assert n_required > 20
         elif gamma == 0.95 and delta_ratio == 0.1:
@@ -65,6 +76,8 @@ class TestParametricFunctions:
         {"n": 50, "delta": 0.2},
         {"n": 100, "delta": 0.15},
     ])
+
+
     def test_consistency_between_functions(self, test_case):
         """
         ПАРАМЕТРИЗОВАННЫЙ ТЕСТ: Проверка согласованности между функциями.

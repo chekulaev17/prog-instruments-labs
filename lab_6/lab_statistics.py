@@ -19,7 +19,8 @@ def generate_sample(a: float, sigma: float, n: int, seed: int = 42) -> tuple:
         seed: Seed для воспроизводимости
 
     Returns:
-        Кортеж (выборка, выборочное среднее, выборочная дисперсия, выборочное СКО)
+        Кортеж (выборка, выборочное среднее,
+                выборочная дисперсия, выборочное СКО)
     """
     np.random.seed(seed)
     sample = np.random.normal(loc=a, scale=sigma, size=n)
@@ -29,8 +30,9 @@ def generate_sample(a: float, sigma: float, n: int, seed: int = 42) -> tuple:
     return sample, x_bar, s2, s
 
 
-def mean_ci_known_variance(x_bar: float, sigma: float,
-                           n: int, gamma: float) -> tuple:
+def mean_ci_known_variance(
+    x_bar: float, sigma: float, n: int, gamma: float
+) -> tuple:
     """
     Доверительный интервал для матожидания при известной дисперсии.
 
@@ -51,8 +53,9 @@ def mean_ci_known_variance(x_bar: float, sigma: float,
     return lower, upper, width
 
 
-def mean_ci_unknown_variance(x_bar: float, s: float,
-                             n: int, gamma: float) -> tuple:
+def mean_ci_unknown_variance(
+    x_bar: float, s: float, n: int, gamma: float
+) -> tuple:
     """
     Доверительный интервал для матожидания при неизвестной дисперсии.
 
@@ -93,8 +96,9 @@ def variance_ci(s2: float, n: int, gamma: float) -> tuple:
     return lower, upper, width
 
 
-def estimate_gamma_star(a: float, sigma: float,
-                        n: int, gamma: float, m: int) -> float:
+def estimate_gamma_star(
+    a: float, sigma: float, n: int, gamma: float, m: int
+) -> float:
     """
     Оценка фактической надежности gamma* через Monte-Carlo симуляцию.
 
@@ -130,7 +134,8 @@ def estimate_gamma_star(a: float, sigma: float,
 
 def find_gamma_for_deviation(n: int, delta_ratio: float = 0.25) -> float:
     """
-    Находит надежность gamma, гарантирующую отклонение |x̄ - a| ≤ delta_ratio * S.
+    Находит надежность gamma, гарантирующую
+    отклонение |x̄ - a| ≤ delta_ratio * S.
 
     Args:
         n: Объем выборки
@@ -171,8 +176,9 @@ def find_n_for_deviation(gamma: float, delta_ratio: float = 0.25) -> int:
     return best_n
 
 
-def plot_ci_length_vs_gamma(a: float, sigma: float, s: float,
-                            s2: float, n: int) -> None:
+def plot_ci_length_vs_gamma(
+    a: float, sigma: float, s: float, s2: float, n: int
+) -> None:
     """
     Строит график длины доверительного интервала от надежности gamma.
 
@@ -223,8 +229,9 @@ def plot_ci_length_vs_gamma(a: float, sigma: float, s: float,
     plt.show()
 
 
-def plot_ci_length_vs_n(a: float, sigma: float, s: float,
-                        s2: float, gamma: float) -> None:
+def plot_ci_length_vs_n(
+    a: float, sigma: float, s: float, s2: float, gamma: float
+) -> None:
     """
     Строит график длины доверительного интервала от объема выборки.
 
@@ -303,24 +310,29 @@ def main() -> None:
     # 1.1 ДИ для матожидания при известной дисперсии
     print("\n1.1 ДИ для матожидания (σ известна)")
     ci_known = mean_ci_known_variance(x_bar, sigma, n, gamma)
-    print(f"ДИ = [{ci_known[0]:.6f}, {ci_known[1]:.6f}], длина = {ci_known[2]:.6f}")
+    print(f"ДИ = [{ci_known[0]:.6f}, {ci_known[1]:.6f}], "
+          f"длина = {ci_known[2]:.6f}")
 
     # 1.2 ДИ для матожидания при неизвестной дисперсии
     print("\n1.2 ДИ для матожидания (σ неизвестна)")
     ci_unknown = mean_ci_unknown_variance(x_bar, s, n, gamma)
-    print(f"ДИ = [{ci_unknown[0]:.6f}, {ci_unknown[1]:.6f}], длина = {ci_unknown[2]:.6f}")
+    print(f"ДИ = [{ci_unknown[0]:.6f}, {ci_unknown[1]:.6f}], "
+          f"длина = {ci_unknown[2]:.6f}")
 
     # 1.3 ДИ для дисперсии
     print("\n1.3 ДИ для дисперсии σ²")
     ci_var = variance_ci(s2, n, gamma)
-    print(f"ДИ = [{ci_var[0]:.6f}, {ci_var[1]:.6f}], длина = {ci_var[2]:.6f}")
-    print(f"Покрывает ли интервал истинное σ² = {sigma2}? -> {ci_var[0] <= sigma2 <= ci_var[1]}")
+    print(f"ДИ = [{ci_var[0]:.6f}, {ci_var[1]:.6f}], "
+          f"длина = {ci_var[2]:.6f}")
+    print(f"Покрывает ли интервал истинное σ² = {sigma2}? "
+          f"-> {ci_var[0] <= sigma2 <= ci_var[1]}")
 
     # 4. Моделирование для оценки gamma*
     print("\n4. Моделирование M выборок для оценки gamma*")
     gamma_star = estimate_gamma_star(a, sigma, n, gamma, m_simulations)
     print(f"M = {m_simulations}, оценка gamma* = {gamma_star:.6f}")
-    print(f"Истинное gamma = {gamma}, отклонение = {abs(gamma_star - gamma):.6f}")
+    print(f"Истинное gamma = {gamma}, "
+          f"отклонение = {abs(gamma_star - gamma):.6f}")
 
     # Вопрос 1
     print("\n--- ВОПРОС 1 ---")

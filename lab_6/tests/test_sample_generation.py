@@ -11,6 +11,8 @@ from lab_statistics import generate_sample
 class TestSampleGeneration:
     """Тестирование генерации выборок."""
 
+
+
     def test_sample_generation_basic(self):
         """Тест базовой генерации выборки."""
         a = 1.0
@@ -37,15 +39,21 @@ class TestSampleGeneration:
         assert s2 > 0
         assert s > 0
 
+
     def test_sample_reproducibility(self):
         """Тест воспроизводимости с одинаковым seed."""
         a = 0.0
         sigma = 1.0
         n = 5
 
-        # Два вызова с одинаковым seed должны дать одинаковые результаты
-        sample1, x_bar1, s2_1, s1 = generate_sample(a, sigma, n, seed=123)
-        sample2, x_bar2, s2_2, s2 = generate_sample(a, sigma, n, seed=123)
+        # Два вызова с одинаковым seed должны
+        # дать одинаковые результаты
+        sample1, x_bar1, s2_1, s1 = generate_sample(
+            a, sigma, n, seed=123
+        )
+        sample2, x_bar2, s2_2, s2 = generate_sample(
+            a, sigma, n, seed=123
+        )
 
         np.testing.assert_array_equal(sample1, sample2)
         assert x_bar1 == pytest.approx(x_bar2)
@@ -58,8 +66,12 @@ class TestSampleGeneration:
         sigma = 1.0
         n = 10
 
-        sample1, x_bar1, s2_1, s1 = generate_sample(a, sigma, n, seed=42)
-        sample2, x_bar2, s2_2, s2 = generate_sample(a, sigma, n, seed=43)
+        sample1, x_bar1, s2_1, s1 = generate_sample(
+            a, sigma, n, seed=42
+        )
+        sample2, x_bar2, s2_2, s2 = generate_sample(
+            a, sigma, n, seed=43
+        )
 
         # Выборки должны отличаться
         with pytest.raises(AssertionError):

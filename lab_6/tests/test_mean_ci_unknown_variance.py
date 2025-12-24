@@ -17,7 +17,9 @@ class TestMeanCIUnknownVariance:
         n = 30
         gamma = 0.95
 
-        lower, upper, width = mean_ci_unknown_variance(x_bar, s, n, gamma)
+        lower, upper, width = mean_ci_unknown_variance(
+            x_bar, s, n, gamma
+        )
 
         # Проверка структуры
         assert isinstance(lower, float)
@@ -28,6 +30,7 @@ class TestMeanCIUnknownVariance:
         assert lower < upper
         assert width > 0
         assert lower <= x_bar <= upper
+
 
     def test_compare_known_vs_unknown(self):
         """
@@ -41,8 +44,12 @@ class TestMeanCIUnknownVariance:
         gamma = 0.95
 
         from lab_statistics import mean_ci_known_variance
-        ci_known = mean_ci_known_variance(x_bar, sigma, n_large, gamma)
-        ci_unknown = mean_ci_unknown_variance(x_bar, s, n_large, gamma)
+        ci_known = mean_ci_known_variance(
+            x_bar, sigma, n_large, gamma
+        )
+        ci_unknown = mean_ci_unknown_variance(
+            x_bar, s, n_large, gamma
+        )
 
         # При больших n разница должна быть небольшой
         diff_width = abs(ci_known[2] - ci_unknown[2])

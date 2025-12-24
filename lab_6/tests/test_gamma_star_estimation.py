@@ -12,6 +12,7 @@ from lab_statistics import estimate_gamma_star
 class TestGammaStarEstimation:
     """Тестирование оценки фактической надежности gamma*."""
 
+
     def test_gamma_star_range(self):
         """
         Тест, что оценка gamma* находится в допустимом диапазоне [0, 1].
@@ -25,6 +26,7 @@ class TestGammaStarEstimation:
         gamma_star = estimate_gamma_star(a, sigma, n, gamma, m)
 
         assert 0 <= gamma_star <= 1
+
 
     @patch('numpy.random.normal')
     def test_gamma_star_perfect_samples(self, mock_normal):
@@ -50,11 +52,13 @@ class TestGammaStarEstimation:
         # В идеале gamma_star должна быть близка к 1
         assert gamma_star >= 0.9
 
+
     @patch('numpy.random.normal')
     def test_gamma_star_extreme_samples(self, mock_normal):
         """
         ПРОДВИНУТЫЙ ТЕСТ: Использование моков.
-        Тест с экстремальными выборками (сильно смещены от истинного значения).
+        Тест с экстремальными выборками
+        (сильно смещены от истинного значения).
         """
         # Выборка со средним 10 при истинном значении 1
         extreme_sample = np.array([10.0, 10.0, 10.0, 10.0, 10.0,
@@ -69,6 +73,7 @@ class TestGammaStarEstimation:
 
         gamma_star = estimate_gamma_star(a, sigma, n, gamma, m)
 
-        # При таких выборках интервалы не должны содержать истинное значение
+        # При таких выборках интервалы не должны
+        # содержать истинное значение
         # Но из-за случайности может быть несколько совпадений
         assert gamma_star < 0.5  # Должно быть меньше половины

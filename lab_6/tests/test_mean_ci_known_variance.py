@@ -11,6 +11,7 @@ from lab_statistics import mean_ci_known_variance
 class TestMeanCIKnownVariance:
     """Тестирование ДИ для среднего с известной дисперсией."""
 
+
     def test_basic_ci_calculation(self):
         """Базовый тест расчета доверительного интервала."""
         x_bar = 10.0
@@ -18,7 +19,9 @@ class TestMeanCIKnownVariance:
         n = 100
         gamma = 0.95
 
-        lower, upper, width = mean_ci_known_variance(x_bar, sigma, n, gamma)
+        lower, upper, width = mean_ci_known_variance(
+            x_bar, sigma, n, gamma
+        )
 
         # Проверка структуры
         assert isinstance(lower, float)
@@ -33,6 +36,7 @@ class TestMeanCIKnownVariance:
         # Выборочное среднее должно быть в центре интервала
         center = (lower + upper) / 2
         assert center == pytest.approx(x_bar, rel=1e-10)
+
 
     def test_ci_width_increases_with_gamma(self):
         """
@@ -59,6 +63,7 @@ class TestMeanCIKnownVariance:
         assert center_low == pytest.approx(center_medium)
         assert center_medium == pytest.approx(center_high)
 
+
     def test_ci_width_decreases_with_n(self):
         """
         Тест: ширина интервала уменьшается с ростом объема выборки.
@@ -68,9 +73,15 @@ class TestMeanCIKnownVariance:
         sigma = 1.0
         gamma = 0.95
 
-        ci_small_n = mean_ci_known_variance(x_bar, sigma, n=10, gamma=gamma)
-        ci_medium_n = mean_ci_known_variance(x_bar, sigma, n=50, gamma=gamma)
-        ci_large_n = mean_ci_known_variance(x_bar, sigma, n=200, gamma=gamma)
+        ci_small_n = mean_ci_known_variance(
+            x_bar, sigma, n=10, gamma=gamma
+        )
+        ci_medium_n = mean_ci_known_variance(
+            x_bar, sigma, n=50, gamma=gamma
+        )
+        ci_large_n = mean_ci_known_variance(
+            x_bar, sigma, n=200, gamma=gamma
+        )
 
         # Проверка, что ширина уменьшается с ростом n
         assert ci_small_n[2] > ci_medium_n[2] > ci_large_n[2]
