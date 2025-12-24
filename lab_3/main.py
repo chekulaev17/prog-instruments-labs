@@ -125,5 +125,6 @@ def main() -> None:
     except Exception as e:
         print(f"Ошибка при выполнении: {str(e)}")
 
+
 if __name__ == "__main__":
     main()
