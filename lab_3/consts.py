@@ -6,6 +6,7 @@ DEFAULT_FILE_PATH = "79.csv"
 FILE_ENCODING = "utf-16"
 CSV_DELIMITER = ";"
 
+
 # -------- REGEX PATTERNS -------- #
 # Исправленные регулярные выражения согласно форматам ЛР
 EMAIL_PATTERN = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'

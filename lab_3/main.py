@@ -114,6 +114,7 @@ def main() -> None:
         print(f"Невалидных строк: {len(invalid_rows)}")
         print(f"Всего строк данных: {len(data) - 1}")
 
+
         checksum_value = calculate_checksum(invalid_rows)
         serialize_result(DEFAULT_VARIANT, checksum_value)
 
